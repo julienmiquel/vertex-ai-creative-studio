@@ -153,7 +153,7 @@ def page():
                         ],
                         on_selection_change=on_select_language,
                         value=state.selected_language,
-                        disabled=True,
+                        # disabled=True,
                     )
                     with me.box(
                         style=me.Style(display="flex", flex_direction="row", gap=16)

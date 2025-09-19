@@ -27,7 +27,7 @@ from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
 from components.dialog import dialog
 from components.library.video_chooser_button import video_chooser_button
-from components.library.audio_chooser_button import audio_chooser_button
+# from components.library.audio_chooser_button import audio_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
 from components.snackbar import snackbar
 from models.video_processing import process_videos, convert_mp4_to_gif, layer_audio_on_video
@@ -320,9 +320,9 @@ def render_video_audio_tab():
                         accepted_file_types=["audio/mpeg", "audio/wav"],
                         style=me.Style(width="100%"),
                     )
-                    audio_chooser_button(
-                        key="audio_1", on_library_select=on_audio_select_from_library
-                    )
+                    # audio_chooser_button(
+                    #     key="audio_1", on_library_select=on_audio_select_from_library
+                    # )
                     # Future: Add audio_chooser_button if created
                 with me.box(style=VIDEO_PLACEHOLDER_STYLE):
                     if state.selected_audio:

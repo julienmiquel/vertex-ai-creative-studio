@@ -24,12 +24,15 @@ from components.page_scaffold import page_frame, page_scaffold
 from config.default import get_welcome_page_config
 from state.state import AppState
 
-
 @me.page(
     path="/home",
     title="GenMedia Creative Studio - v.next",
     security_policy=me.SecurityPolicy(
         dangerously_disable_trusted_types=True,
+        allowed_script_srcs=[
+      'https://esm.sh',
+    ]
+
     ),
     stylesheets=[
         "https://fonts.googleapis.com/css2?family=Google+Symbols:opsz,wght,FILL,GRAD,ROND@20..48,100..700,0..1,-50..200,0..100&icon_names=spark",

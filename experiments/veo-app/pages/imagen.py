@@ -25,7 +25,14 @@ from config.default import ABOUT_PAGE_CONTENT
 from state.imagen_state import PageState
 
 
-@me.page(path="/imagen", title="GenMedia Creative Studio - Imagen")
+@me.page(path="/imagen", title="GenMedia Creative Studio - Imagen",    
+         security_policy=me.SecurityPolicy(
+        dangerously_disable_trusted_types=True,
+        allowed_script_srcs=[
+            'https://esm.sh',
+            ]
+        )
+    )
 def imagen_page():
     with page_scaffold(page_name="imagen"):  # pylint: disable=E1129:not-context-manager
         imagen_content(me.state(PageState))

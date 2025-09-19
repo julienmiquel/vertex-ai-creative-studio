@@ -118,4 +118,18 @@ def on_tab_click(e: me.ClickEvent):
     state.selected_tab_index = int(tab_index)
 
 
+def on_click_clear_reference_image(e: me.ClickEvent | None = None):
+    """Clear the reference image and generated look."""
+    state = me.state(PageState)
+    state.reference_image_gcs_model = None
+    state.look = 0
+    state.generated_look_gcs_uris = []
+    state.current_status = ""
+    state.selected_article_type = ""
+    state.selected_article_id = ""
+    state.generated_image_accuracy = None
+    state.article_descriptions = None
+    yield
+
+
 

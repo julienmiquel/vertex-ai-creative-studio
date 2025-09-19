@@ -29,12 +29,14 @@ from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
 from components.snackbar import snackbar
+from components.styles import _BOX_STYLE
 from components.svg_icon.svg_icon import svg_icon
 from config.banana_presets import IMAGE_ACTION_PRESETS
 from config.default import Default as cfg
 from models.gemini import (
     generate_image_from_prompt_and_images,
     generate_transformation_prompts,
+    rewrite_prompt_with_gemini,
 )
 from state.state import AppState
 
@@ -61,9 +63,11 @@ class PageState:
     show_snackbar: bool = False
     snackbar_message: str = ""
     previous_media_item_id: str | None = None  # For linking generation sequences
-    num_images_to_generate: int = 1
+    num_images_to_generate: int = 4
     suggested_transformations: list[dict] = field(default_factory=list)  # pylint: disable=invalid-field-call
     is_suggesting_transformations: bool = False
+    is_rewriting: bool = False
+    rewritten_prompt: str = ""
 
     info_dialog_open: bool = False
     initial_load_complete: bool = False
@@ -110,11 +114,11 @@ def gemini_image_gen_page_content():
             on_info_click=open_info_dialog,
         )
 
-        with me.box(style=me.Style(display="flex", flex_direction="row", gap=16)):
+        with me.box(style=_BOX_STYLE):
             # Left column (controls)
             with me.box(
                 style=me.Style(
-                    width=400,
+                    # width=400,
                     background=me.theme_var("surface-container-lowest"),
                     padding=me.Padding.all(16),
                     border_radius=12,
@@ -163,15 +167,58 @@ def gemini_image_gen_page_content():
                                 on_remove=on_remove_image,
                                 icon_size=18,
                             )
-                me.textarea(
-                    label="Prompt",
-                    rows=3,
-                    max_rows=14,
-                    autosize=True,
-                    on_blur=on_prompt_blur,
-                    value=state.prompt,
-                    style=me.Style(width="100%", margin=me.Margin(bottom=16)),
-                )
+                with me.box(style=me.Style(position="relative", width="100%")):
+                    me.textarea(
+                        label="Prompt",
+                        rows=3,
+                        max_rows=14,
+                        autosize=True,
+                        on_blur=on_prompt_blur,
+                        value=state.prompt,
+                        style=me.Style(width="100%", margin=me.Margin(bottom=16)),
+                    )
+                    if state.prompt:
+                        with me.content_button(
+                            on_click=on_clear_prompt_click,
+                            type="icon",
+                            style=me.Style(
+                                position="absolute",
+                                top=0,
+                                right=0,
+                            ),
+                        ):
+                            me.icon("close")
+
+                # Rewritten prompt display
+                if state.rewritten_prompt:
+                    with me.box(
+                        style=me.Style(
+                            background=me.theme_var("surface-container-high"),
+                            padding=me.Padding.all(12),
+                            border_radius=8,
+                            margin=me.Margin(bottom=16),
+                        )
+                    ):
+                        me.text("Suggested prompt:", style=me.Style(font_weight="bold"))
+                        me.text(state.rewritten_prompt)
+                        with me.box(
+                            style=me.Style(
+                                display="flex",
+                                flex_direction="row",
+                                gap=8,
+                                margin=me.Margin(top=8),
+                            )
+                        ):
+                            me.button(
+                                "Use",
+                                on_click=on_use_rewritten_prompt_click,
+                                type="stroked",
+                            )
+                            me.button(
+                                "Discard",
+                                on_click=on_discard_rewritten_prompt_click,
+                                type="stroked",
+                            )
 
                 me.select(
                     label="Number of Images",
@@ -206,11 +253,29 @@ def gemini_image_gen_page_content():
                             ):
                                 me.progress_spinner(diameter=20, stroke_width=3)
                                 me.text("Generating Images...")
+                    elif state.is_rewriting:
+                        with me.content_button(type="raised", disabled=True):
+                            with me.box(
+                                style=me.Style(
+                                    display="flex",
+                                    flex_direction="row",
+                                    align_items="center",
+                                    gap=8,
+                                )
+                            ):
+                                me.progress_spinner(diameter=20, stroke_width=3)
+                                me.text("Rewriting...")
                     else:
                         me.button(
                             "Generate Images",
                             on_click=generate_images,
                             type="raised",
+                        )
+                        # if state.prompt:
+                        me.button(
+                            "Rewrite",
+                            on_click=on_rewrite_click,
+                            type="stroked",
                         )
                         with me.content_button(on_click=on_clear_click, type="icon"):
                             me.icon("delete_sweep")
@@ -514,11 +579,19 @@ def on_thumbnail_click(e: me.ClickEvent):
     yield
 
 
+def on_clear_prompt_click(e: me.ClickEvent):
+    """Clears the prompt."""
+    state = me.state(PageState)
+    state.prompt = ""
+    yield
+
+
 def on_clear_click(e: me.ClickEvent):
     """Resets the entire page state to its initial values, clearing all inputs and outputs."""
     state = me.state(PageState)
     state.generated_image_urls = []
     state.prompt = ""
+    state.rewritten_prompt = ""
     state.uploaded_image_gcs_uris = []
     state.selected_image_url = ""
     state.generation_time = 0.0
@@ -526,6 +599,42 @@ def on_clear_click(e: me.ClickEvent):
     state.previous_media_item_id = None  # Reset the chain
     state.num_images_to_generate = 1
     state.suggested_transformations = []
+    yield
+
+
+def on_rewrite_click(e: me.ClickEvent):
+    """Handles the click of the 'Rewrite' button to generate a new prompt."""
+    state = me.state(PageState)
+    if not state.prompt:
+        yield from show_snackbar(state, "Please enter a prompt to rewrite.")
+        return
+
+    state.is_rewriting = True
+    yield
+
+    try:
+        with track_model_call("gemini-rewriter", prompt_length=len(state.prompt)):
+            state.rewritten_prompt = rewrite_prompt_with_gemini(state.prompt)
+    except Exception as ex:
+        print(f"ERROR: Failed to rewrite prompt. Details: {ex}")
+        yield from show_snackbar(state, f"An error occurred during rewrite: {ex}")
+    finally:
+        state.is_rewriting = False
+        yield
+
+
+def on_use_rewritten_prompt_click(e: me.ClickEvent):
+    """Uses the rewritten prompt as the main prompt."""
+    state = me.state(PageState)
+    state.prompt = state.rewritten_prompt
+    state.rewritten_prompt = ""
+    yield
+
+
+def on_discard_rewritten_prompt_click(e: me.ClickEvent):
+    """Discards the rewritten prompt."""
+    state = me.state(PageState)
+    state.rewritten_prompt = ""
     yield
 
 
@@ -777,7 +886,6 @@ def close_info_dialog(e: me.ClickEvent):
 
 
 from components.veo_button.veo_button import veo_button
-
 def on_load(e: me.LoadEvent):
     """Handles the initial load of the page, checking for an image URI in the query parameters."""
     state = me.state(PageState)
@@ -795,6 +903,13 @@ def on_load(e: me.LoadEvent):
     path="/gemini_image_generation",
     title="Gemini Image Generation - GenMedia Creative Studio",
     on_load=on_load,
+        security_policy=me.SecurityPolicy(
+        dangerously_disable_trusted_types=True,
+        allowed_script_srcs=[
+            'https://esm.sh',
+            ]
+        )
+
 )
 def page():
     """Define the Mesop page route for Gemini Image Generation."""

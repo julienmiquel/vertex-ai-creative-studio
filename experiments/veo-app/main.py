@@ -51,13 +51,13 @@ from pages import veo
 from pages import vto as vto_page
 from pages import welcome as welcome_page
 from pages.edit_images import content as edit_images_content
-from pages.test_character_consistency import page as test_character_consistency_page
-from pages.test_index import page as test_index_page
-from pages.test_infinite_scroll import test_infinite_scroll_page
-from pages.test_pixie_compositor import test_pixie_compositor_page
-from pages.test_uploader import test_uploader_page
-from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
-from pages.test_worsfold_encoder import test_worsfold_encoder_page
+# from pages.test_character_consistency import page as test_character_consistency_page
+# from pages.test_index import page as test_index_page
+# from pages.test_infinite_scroll import test_infinite_scroll_page
+# from pages.test_pixie_compositor import test_pixie_compositor_page
+# from pages.test_uploader import test_uploader_page
+# from pages.test_vto_prompt_generator import page as test_vto_prompt_generator_page
+# from pages.test_worsfold_encoder import test_worsfold_encoder_page
 from pages import pixie_compositor as pixie_compositor_page
 from state.state import AppState
 import google.auth
@@ -74,7 +74,7 @@ app.include_router(router)
 # Define allowed origins for CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://.*\.cloudshell\.dev|http://localhost:8080",
+    allow_origin_regex=r"https://.*\.cloudshell\.dev|http://localhost:8080|http://localhost:32123",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -159,25 +159,6 @@ async def set_request_context(request: Request, call_next):
     )
     return response
 
-
-# Test page routes are left as is, they don't need the scaffold
-me.page(path="/test_character_consistency", title="Test Character Consistency")(
-    test_character_consistency_page
-)
-me.page(path="/test_index", title="Test Index")(test_index_page)
-me.page(path="/test_infinite_scroll", title="Test Infinite Scroll")(
-    test_infinite_scroll_page
-)
-me.page(path="/test_pixie_compositor", title="Test Pixie Compositor")(
-    test_pixie_compositor_page
-)
-me.page(path="/test_uploader", title="Test Uploader")(test_uploader_page)
-me.page(path="/test_vto_prompt_generator", title="Test VTO Prompt Generator")(
-    test_vto_prompt_generator_page
-)
-me.page(path="/test_worsfold_encoder", title="Test Worsfold Encoder")(
-    test_worsfold_encoder_page
-)
 
 
 @app.get("/")

@@ -34,7 +34,15 @@ def on_tile_click(e: me.WebEvent):
 
 @me.page(
     path="/welcome",
-    title="Welcome - GenMedia Creative Studio",
+    title="Welcome - GenMedia Creative Studio",    
+    security_policy=me.SecurityPolicy(
+        dangerously_disable_trusted_types=True,
+        allowed_script_srcs=[
+      'https://esm.sh',
+    ]
+
+    ),
+
 )
 def page():
     """Define the Mesop page route for the welcome page."""

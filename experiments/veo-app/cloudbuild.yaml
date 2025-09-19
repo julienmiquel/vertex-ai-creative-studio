@@ -19,11 +19,11 @@ substitutions:
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Build image'
-    args: ['build', '-t', '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_IMAGE_NAME', '.']
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/ai-creative-studio-demo/$_IMAGE_NAME', '.']
   - name: 'gcr.io/cloud-builders/docker'
     id: 'Push image to Artifact Registry'
-    args: ['push', '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_IMAGE_NAME']
+    args: ['push', 'us-central1-docker.pkg.dev/ai-creative-studio-demo/$_IMAGE_NAME']
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
     entrypoint: gcloud
     id: Update Cloud Run Image
-    args: [ 'run', 'deploy', 'creative-studio', '--image', '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_IMAGE_NAME', '--region', '$LOCATION' ]    
+    args: [ 'run', 'deploy', 'creative-studio', '--image', 'us-central1-docker.pkg.dev/ai-creative-studio-demo/$_IMAGE_NAME', '--region', '$LOCATION' ]    

@@ -62,9 +62,9 @@ def generation_controls():
         me.textarea(
             key=str(state.image_textarea_key),
             on_blur=on_blur_image_prompt,
-            rows=3,
+            rows=6,
             autosize=True,
-            max_rows=10,
+            max_rows=300,
             style=me.Style(width="100%"),
             value=state.image_prompt_placeholder
             or state.image_prompt_input,  # Show input if placeholder is also input
